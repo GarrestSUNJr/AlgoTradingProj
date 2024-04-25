@@ -3,9 +3,9 @@ __email__ = 'l276660317@gmail.com'
 
 import time
 from binance import ThreadedWebsocketManager
-from framework_old import BinanceTradingBot
+from traderbase import BinanceTradingBot
 import sys
-from logger.logger import *
+from Logger.logger import *
 import os
 import datetime
 
