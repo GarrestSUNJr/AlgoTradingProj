@@ -1,6 +1,5 @@
 from Order_Execution import OrderExecutionHandler
-
-
+import time as tm
 '''
 this class would run the whole strategy through the method named run_strategy method.
 '''
@@ -21,6 +20,7 @@ class BackTest:
                     break
                 elif order != {}:  # means having order to be sent
                     self.order_execution_handler.execute(order, time, warning_signal)
+                    # tm.sleep(0.5)
             else:
                 if self.rerun_from_stop() != None:
                     break

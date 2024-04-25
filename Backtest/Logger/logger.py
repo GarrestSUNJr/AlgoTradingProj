@@ -11,15 +11,17 @@ class Logger:
     def print(self, *objects: Any, sep: str = " ", end: str = "\n") -> None:
         self.logs += sep.join(map(str, objects)) + end
 
-    def flush_netvalue(self,value):
-        time_now = str(datetime.datetime.now())[:16]+':00'
-        info_operation = time_now +' , ' + str(value)
+    def flush_netvalue(self,value,time):
+        # time_now = str(datetime.datetime.now())[:16]+':00'
+        # info_operation = time_now +' , ' + str(value)
+        info_operation = str(time) +' , ' + str(value)
         self.flush_file((self.UI_path+'NetValueTemp.log'), info_operation)
 
-    def flush_trades(self,symbol,direction,qty,prc):
-        time_now = str(datetime.datetime.now())[:16]+':00'
+    def flush_trades(self,symbol,direction,qty,prc,time):
+        # time_now = str(datetime.datetime.now())[:16]+':00'
         if qty==0: qty=1
-        info_operation = time_now +', '+direction+', '+str(prc) +', '+str(qty) 
+        # info_operation = time_now +', '+direction+', '+str(prc) +', '+str(qty) 
+        info_operation = str(time) +', '+direction+', '+str(prc) +', '+str(qty) 
         self.flush_file(self.UI_path+'Operation.log', info_operation)
 
     def flush_file(self,filepath,infoadd):

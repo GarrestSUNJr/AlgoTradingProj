@@ -1,5 +1,6 @@
 from Data_Loader import DataAgent
 from Account import Account
+from Risk_Manager import RiskManager
 from typing import List
 from abc import abstractmethod, ABCMeta
 import datetime
@@ -12,12 +13,13 @@ Strategy_BackTest object, and they would send orders through method start run
 
 class Strategy_BackTest(metaclass = ABCMeta):
     def __init__(self, strategy_name, dh: DataAgent, start_time: datetime.datetime, end_time: datetime.datetime,
-                 trading_symbols: List, account: Account):
+                 trading_symbols: List, account: Account,riskmanager: RiskManager):
         self.strategy_name = strategy_name
         self.symbols = trading_symbols
         self.start_time = start_time
         self.end_time = end_time
         self.account = account
+        self.riskmanager = riskmanager
         # get iter of datetime to backtest
         self.dh = dh
         self.dh.generate_backtest_datetime_iter(self.start_time, self.end_time)
@@ -47,13 +49,13 @@ class Strategy_BackTest(metaclass = ABCMeta):
 class strategy_DualMA(Strategy_BackTest):
     def __init__(self, strategy_name, dh: DataAgent, start_time: datetime.datetime, end_time: datetime.datetime,
                  trading_symbols: List,
-                 account: Account, long_term: int, short_term: int, quantity = 1):
+                 account: Account, riskmanager: RiskManager,long_term: int, short_term: int, quantity = 1):
         '''
 
         Dual MA strategy: if MA(short term)> MA(long term), then long the symbol else short
         if signal occurs then net short or long quantity unit symbol
         '''
-        super().__init__(strategy_name, dh, start_time, end_time, trading_symbols, account)
+        super().__init__(strategy_name, dh, start_time, end_time, trading_symbols, account,riskmanager)
         self.long_term = long_term
         self.short_term = short_term
         self.quantity = quantity
@@ -64,12 +66,17 @@ class strategy_DualMA(Strategy_BackTest):
     def start_run(self):
         order = {}
         update_symbols, date_time = self.dh.update_data()
+    
 
         if update_symbols != None:
             use_kline_history = self.dh.get_latest_use_data(update_symbols, n = self.long_term + 2)
-            warning_signal = self.account.Check_Warning(date_time, self.dh)
+            pnl_signal = self.riskmanager.check_pnl(date_time, self.dh)
+            
+            # order_signal = self.riskmanager.check_order(self.quantity)
+            execute_signal = self.riskmanager.check_execute(date_time)
+            
 
-            if warning_signal == None:
+            if pnl_signal == None and execute_signal == None:
                 for symbol in use_kline_history.keys():
                     # get the mean close price
                     short_term_mean_now = sum(
@@ -95,18 +102,20 @@ class strategy_DualMA(Strategy_BackTest):
                                 order[symbol] = {}
                                 order[symbol]['action'] = self.long_action
                                 order[symbol]['quantity'] = self.quantity - self.account.position[symbol]
+                                self.riskmanager.execute_add()
                             else:
                                 print('Not enough Money!')
-                                return {}, date_time, warning_signal
+                                return {}, date_time, pnl_signal
 
                         elif self.account.position[symbol] == 0:
                             if self.account.balance > (self.quantity + 1) * use_kline_history[symbol][-1]['k']["c"]:
                                 order[symbol] = {}
                                 order[symbol]['action'] = self.long_action
                                 order[symbol]['quantity'] = self.quantity
+                                self.riskmanager.execute_add()
                             else:
                                 print('Not enough Money!')
-                                return {}, date_time, warning_signal
+                                return {}, date_time, pnl_signal
 
                     # short action
                     elif (short_term_mean_now < long_term_mean_now) and (
@@ -116,24 +125,26 @@ class strategy_DualMA(Strategy_BackTest):
                             order[symbol] = {}
                             order[symbol]['action'] = self.short_action
                             order[symbol]['quantity'] = self.quantity + self.account.position[symbol]
+                            self.riskmanager.execute_add()
 
                         elif self.account.position[symbol] == 0:
                             order[symbol] = {}
                             order[symbol]['action'] = self.short_action
                             order[symbol]['quantity'] = self.quantity
+                            self.riskmanager.execute_add()
 
 
-            elif warning_signal == -1 or warning_signal == 1:
+            elif pnl_signal == -1 or pnl_signal == 1:
                 # reach the loss or profit line
                 self.continue_backtest = False
-                return self.account.close_position(), date_time, warning_signal
+                return self.account.close_position(), date_time, pnl_signal
 
         return order, date_time, None  # no update data or no action generated
 
 
 class strategy_DualThrust(Strategy_BackTest):
     def __init__(self, strategy_name, dh: DataAgent, start_time: datetime.datetime, end_time: datetime.datetime,
-                 trading_symbols: List, account: Account, n1: int, n2: int, k1: float, k2: float, quantity: int):
+                 trading_symbols: List, account: Account, riskmanager: RiskManager,n1: int, n2: int, k1: float, k2: float, quantity: int):
 
         '''
         :params n1: use T-n1-n2 ~ T-n2-1 history minute bars (n1 in total) as the baselines to generate the range
@@ -142,7 +153,7 @@ class strategy_DualThrust(Strategy_BackTest):
         :params k2: parameter for the sell line
         '''
 
-        super().__init__(strategy_name, dh, start_time, end_time, trading_symbols, account)
+        super().__init__(strategy_name, dh, start_time, end_time, trading_symbols, account, riskmanager)
         self.n1 = n1
         self.n2 = n2
         self.k1 = k1
@@ -158,7 +169,7 @@ class strategy_DualThrust(Strategy_BackTest):
 
         if update_symbols != None:
             use_kline_history = self.dh.get_latest_use_data(update_symbols, n = self.n1 + self.n2 + 2)
-            warning_signal = self.account.Check_Warning(date_time, self.dh)
+            warning_signal = self.riskmanager.check_pnl(date_time, self.dh)
 
             if warning_signal == None:
                 for symbol in use_kline_history.keys():
@@ -224,7 +235,7 @@ class strategy_DualThrust(Strategy_BackTest):
 class strategy_R_Breaker(Strategy_BackTest):
 
     def __init__(self, strategy_name, dh: DataAgent, start_time: datetime.datetime, end_time: datetime.datetime,
-                 trading_symbols: List, account: Account, n1: int, n2: int, quantity: int):
+                 trading_symbols: List, account: Account,riskmanager: RiskManager, n1: int, n2: int, quantity: int):
         '''
         we don't use the prices last day, we use the prices of T-n1-n2 ~ T-n2-1 history minute bars.
     
@@ -232,7 +243,7 @@ class strategy_R_Breaker(Strategy_BackTest):
         :params n2: use T-n2~T history minute bars to compare with the range
         '''
 
-        super().__init__(strategy_name, dh, start_time, end_time, trading_symbols, account)
+        super().__init__(strategy_name, dh, start_time, end_time, trading_symbols, account,riskmanager)
         self.n1 = n1
         self.n2 = n2
         self.quantity = quantity
@@ -248,7 +259,7 @@ class strategy_R_Breaker(Strategy_BackTest):
 
         if update_symbols != None:
             use_kline_history = self.dh.get_latest_use_data(update_symbols, n = self.n1 + self.n2 + 2)
-            warning_signal = self.account.Check_Warning(date_time, self.dh)
+            warning_signal = self.riskmanager.check_pnl(date_time, self.dh)
 
             if warning_signal == None:
                 for symbol in use_kline_history.keys():

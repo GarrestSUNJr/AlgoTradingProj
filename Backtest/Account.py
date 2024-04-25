@@ -10,11 +10,12 @@ this class would record all the trading information.
 
 
 class Account:
-    def __init__(self, balance_init, start_time, end_time, buy_cost_rate = 0.0001, sell_cost_rate = 0.0001,
+    def __init__(self, balance_init, start_time, end_time, logger, buy_cost_rate = 0.0001, sell_cost_rate = 0.0001,
                  stop_loss_rate = -0.1, stop_profit_rate = 0.2):
 
         self.balance_init = balance_init
         self.balance = balance_init  # initial balance
+        self.logger = logger
         self.position_value = 0
         self.netValue = self.balance + self.position_value
         self.buy_time = {}
@@ -61,6 +62,7 @@ class Account:
 
         self.netValue = self.balance + self.position_value
         self.netValue_time_series[time] = self.netValue
+        self.logger.flush_netvalue(self.netValue,time)
         return self.netValue
 
     def Check_Warning(self, time: datetime.datetime, dh: DataAgent):
