@@ -1,9 +1,4 @@
 # -*- coding: utf-8 -*-
-"""
-Created on Wed May  3 11:33:35 2023
-
-@author: Sherry
-"""
 from flask import Flask, render_template
 from flask.json import jsonify
 from flask import request
@@ -132,7 +127,5 @@ if __name__ == "__main__":
     
     app.run(host='0.0.0.0',port=1122)
     """
-    /opt/anaconda3/envs/BinanceTrading/bin/python /Users/absolutex/Library/CloudStorage/OneDrive-个人/market/BlockChain/BinanceMarketmaking/UI/UI_backend.py
-    
-    http://0.0.0.0:1122/dashboard
+    http://127.0.0.1:1122/dashboard
     """
