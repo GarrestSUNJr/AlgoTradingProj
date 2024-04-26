@@ -4,10 +4,6 @@ from Data_Loader import DataAgent
 import pandas as pd
 from Evaluation import Evaluation
 
-'''
-this class would record all the trading information.
-'''
-
 
 class Account:
     def __init__(self, balance_init, start_time, end_time, logger, buy_cost_rate = 0.0001, sell_cost_rate = 0.0001,
@@ -34,9 +30,6 @@ class Account:
         self.stop_loss_rate = stop_loss_rate
         self.stop_profit_rate = stop_profit_rate
         self.netValue_time_series = {}  # record the change of netvalue
-
-        # self.info = pd.DataFrame(
-        #     columns = ['code', 'buy_price', 'buy_time', 'buy_num', 'sell_price', 'sell_time', 'sell_num'])
 
     def buy(self, buy_time, symbol, buy_price, buy_num):
         self.position[symbol] += buy_num

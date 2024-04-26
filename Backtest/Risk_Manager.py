@@ -6,15 +6,7 @@ class RiskManager:
         self.stop_loss_rate = stop_loss_rate
         self.stop_profit_rate = stop_profit_rate
         self.execute_cnt = 0
-        
-    
-    def check_order(self,quantity):
-        if quantity > self.order_max:
-            return -1
-        elif quantity < -self.order_max:
-            return 1
-        else:
-            return None
+
 
     def check_execute(self,date_time):
         if self.execute_cnt < self.execute_max:
@@ -26,6 +18,13 @@ class RiskManager:
     def execute_add(self):
         pass
 
+    def check_order(self,quantity):
+        if quantity > self.order_max:
+            return -1
+        elif quantity < -self.order_max:
+            return 1
+        else:
+            return None
     def check_pnl(self,time,dh):
         self.account.update_net_value(time, dh)
         if self.account.netValue < self.account.balance_init * (1 + self.stop_loss_rate):

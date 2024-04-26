@@ -6,7 +6,6 @@ from Logger.logger import *
 from BackTest import BackTest
 
 # test
-# UI_path = str(os.path.abspath(sys.argv[0]))+'/UI/'
 UI_path = 'UI/'
 logger = Logger(UI_path)
 print(UI_path)
