@@ -1,4 +1,4 @@
-# Algorithm Trading System
+# Algorithmic Trading System
 
 This project is to develop an algorithm trading system.
 Our algorithm trading system architecture follows the one that is introduced in MFE5210.
